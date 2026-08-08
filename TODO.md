@@ -17,11 +17,14 @@
 
 ## Before going live
 
-* [ ] Create the GitHub repo and push to `trunk`
-* [ ] Import the repo into Vercel, preset Vite, and set the production branch
+* [x] Create the GitHub repo and push to `trunk`
+* [x] Import the repo into Vercel, preset Vite, and set the production branch
       to `trunk`
-* [ ] Claim `hi.david-katz.dev` in the Vercel project's Domains tab
-* [ ] Add DNS: `CNAME` record `hi` -> `cname.vercel-dns.com`
+* [x] Claim `hi.david-katz.dev` in the Vercel project's Domains tab
+* [x] Add DNS: `CNAME` record `hi` -> `ae8e032ad1c32231.vercel-dns-017.com`
+      (Namecheap, Advanced DNS)
+* [x] Verify the live page: 43282 B served, 22.9 kB over the wire, one
+      request, `/CNAME` gone
 * [ ] Confirm the Observability tab actually reports edge requests for the
       project on the Hobby plan
 * [ ] Check Vercel's terms on whether a personal business card counts as

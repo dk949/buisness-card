@@ -120,6 +120,6 @@ GitHub Actions runs `typecheck` only (`.github/workflows/ci.yml`). It does not d
 
 **Why not Pages.** Vercel's Observability tab counts edge requests server-side, which is the whole reason for the move: a hit count with no client script, no cookies, and no second request. Vercel Web Analytics would give path and referrer breakdowns but costs an extra request for `/_vercel/insights/script.js`, so it stays off. Weight is the point of this repo.
 
-DNS: a `CNAME` record for `hi` pointing at `cname.vercel-dns.com`, managed wherever `david-katz.dev` is registered. The domain is claimed in the Vercel project's Domains tab; there is no `public/CNAME` file (that was a Pages mechanism). The apex `david-katz.dev` stays on the main site.
+DNS: a `CNAME` record for `hi` pointing at the per-project target Vercel issues when the domain is added, currently `ae8e032ad1c32231.vercel-dns-017.com`. Managed at Namecheap (nameservers are `dns1`/`dns2.registrar-servers.com`), under Domain List -> `david-katz.dev` -> Advanced DNS -> Host Records. Do not substitute the generic `cname.vercel-dns.com`; take whatever the Domains tab shows. The domain is claimed in the Vercel project's Domains tab; there is no `public/CNAME` file (that was a Pages mechanism). The apex `david-katz.dev` stays on the main site.
 
 Changing the subdomain means changing `CARD_URL` in `data/card.ts` and the domain in the Vercel project together, then rebuilding so the QR is re-encoded.
