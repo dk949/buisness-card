@@ -1,0 +1,362 @@
+/* source(none) plus explicit sources: Tailwind 4's automatic detection walks
+   the whole repo, so prose in CLAUDE.md and TODO.md was emitting utilities
+   for words like "grid" and "border" and quietly growing the payload. */
+@import "tailwindcss" source(none);
+@source "../index.html";
+@source "./card.ts";
+
+@import "@dk949/site-theme/theme.css";
+@import "./generated/fonts.css";
+
+/* ===================================================================
+   Card layout
+
+   One screen, one object. The page has two readers at two moments:
+   the stranger pointing a camera at the QR, and the same person a
+   second later holding the page on their own phone. The QR is sized
+   for the first; everything below it is ordered for the second.
+
+   The visual conceit extends the parent site's Silicon + Copper
+   motif: the QR is the die, framed by copper alignment fiducials,
+   with a trace and a via carrying you down into the contact rail.
+   That is the only bold move on the page; the rest stays quiet.
+   =================================================================== */
+
+@layer base {
+    body {
+        @apply font-mono bg-bg text-fg antialiased flex;
+        margin: 0;
+        min-height: 100svh;
+        padding: 2rem 1.25rem;
+    }
+
+    /* margin:auto rather than justify-content:center -- centring a flex
+       item that outgrows its container clips the top, auto margins do not. */
+    main {
+        @apply w-full;
+        margin: auto;
+        max-width: 23rem;
+    }
+
+    :focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 2px;
+    }
+
+    /* No entrance animation, deliberately. This page is handed to someone
+       with a camera already pointed at it; anything that delays the QR
+       being scannable, or that renders content invisible until a frame
+       has run, is a cost with no matching benefit. Motion is limited to
+       hover and focus transitions. */
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+            transition-duration: 0.01ms !important;
+        }
+    }
+}
+
+@layer components {
+    /* --- Identity --------------------------------------------------- */
+
+    .ident {
+        @apply relative;
+        padding-bottom: 1.15rem;
+        margin-bottom: 1.9rem;
+    }
+
+    /* The copper trace segment under the rule, lifted verbatim from the
+       parent site's hero, is the cheapest possible family resemblance. */
+    .ident::after {
+        @apply absolute bg-accent;
+        content: "";
+        left: 0;
+        bottom: 0;
+        width: 3rem;
+        height: 3px;
+        border-radius: 2px;
+    }
+
+    /* Archivo is subset to a single pinned instance (wght 800 / wdth 118),
+       so the width is baked into the glyphs and font-stretch is not set. */
+    .ident h1 {
+        @apply font-sans text-fg m-0;
+        font-size: clamp(2.3rem, 12vw, 2.9rem);
+        font-weight: 800;
+        letter-spacing: -0.025em;
+        line-height: 1;
+        margin-bottom: 0.7rem;
+    }
+
+    .ident .role {
+        @apply text-fg-dim m-0;
+        font-size: 0.8125rem;
+        letter-spacing: 0.01em;
+        line-height: 1.5;
+    }
+
+    .ident .affil {
+        @apply text-muted m-0;
+        font-size: 0.75rem;
+        line-height: 1.5;
+    }
+
+    /* --- Scan ------------------------------------------------------- */
+
+    .scan {
+        @apply relative;
+        --trace: 1.6rem;
+        margin-bottom: 2rem;
+    }
+
+    /* Fixed dark-on-light in both schemes. Plenty of phone cameras refuse
+       inverted codes, and a card that will not scan is not a card. The two
+       values are the light scheme's own fg / bg-elev, so it still reads as
+       part of the palette rather than a foreign white box. */
+    .die {
+        @apply relative block mx-auto;
+        --qr-fg: #14161a;
+        --qr-bg: #f3f4f6;
+        width: 10.5rem;
+        border-radius: 5px;
+        background: var(--qr-bg);
+        box-shadow: 0 0 30px color-mix(in srgb, var(--color-accent) 20%, transparent);
+    }
+
+    .die svg {
+        @apply block w-full h-auto;
+        border-radius: 5px;
+    }
+
+    /* Four copper corner brackets, drawn as eight solid gradients so the
+       frame costs no extra elements. Photolithography alignment marks:
+       they say "aim here" and they are true to the subject. */
+    .die::before {
+        @apply absolute pointer-events-none;
+        content: "";
+        inset: -0.7rem;
+        --arm: 0.8rem;
+        --gauge: 2px;
+        background-image:
+            linear-gradient(var(--color-accent) 0 0), linear-gradient(var(--color-accent) 0 0),
+            linear-gradient(var(--color-accent) 0 0), linear-gradient(var(--color-accent) 0 0),
+            linear-gradient(var(--color-accent) 0 0), linear-gradient(var(--color-accent) 0 0),
+            linear-gradient(var(--color-accent) 0 0), linear-gradient(var(--color-accent) 0 0);
+        background-repeat: no-repeat;
+        background-position:
+            0 0, 0 0,
+            100% 0, 100% 0,
+            0 100%, 0 100%,
+            100% 100%, 100% 100%;
+        background-size:
+            var(--arm) var(--gauge), var(--gauge) var(--arm),
+            var(--arm) var(--gauge), var(--gauge) var(--arm),
+            var(--arm) var(--gauge), var(--gauge) var(--arm),
+            var(--arm) var(--gauge), var(--gauge) var(--arm);
+    }
+
+    /* Trace dropping out of the die's bottom edge, terminating in a via
+       (a plated through-hole: ring, not dot). */
+    .die::after {
+        @apply absolute pointer-events-none;
+        content: "";
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 14px;
+        height: var(--trace);
+        background-image:
+            linear-gradient(var(--color-accent) 0 0),
+            radial-gradient(circle at 50% calc(100% - 5.5px),
+                transparent 0 1.8px, var(--color-accent) 1.9px 5px, transparent 5.1px);
+        background-repeat: no-repeat;
+        background-position: 50% 0, 0 0;
+        background-size: 2px calc(var(--trace) - 11px), 100% 100%;
+    }
+
+    .scan-label {
+        @apply flex flex-wrap items-baseline justify-center m-0;
+        gap: 0.5rem;
+        margin-top: calc(var(--trace) + 0.55rem);
+        font-size: 0.75rem;
+    }
+
+    .scan-label .key {
+        @apply text-accent font-semibold lowercase;
+        letter-spacing: 0.08em;
+    }
+
+    /* SSA-value prefix, the parent site's section-label tic. */
+    .scan-label .key::before,
+    .reach h2::before {
+        content: "%";
+    }
+
+    .scan-label .val {
+        @apply text-fg-dim;
+        letter-spacing: 0.01em;
+    }
+
+    /* --- Contact ---------------------------------------------------- */
+
+    .reach {
+        margin-bottom: 1.6rem;
+    }
+
+    .reach h2 {
+        @apply text-accent font-semibold lowercase m-0;
+        font-size: 0.75rem;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.85rem;
+    }
+
+    /* Fixed two columns rather than flex-wrap: four channels always land as
+       a tidy 2x2 block instead of a ragged 3+1 that shifts with the
+       viewport. It also lines the group up with the full-width actions
+       below it. */
+    .chips {
+        @apply grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+    }
+
+    .chip {
+        @apply inline-flex items-center text-fg-dim no-underline rounded-md border border-border;
+        gap: 0.45rem;
+        font-size: 0.8125rem;
+        padding: 0.45rem 0.8rem;
+        transition: color 0.15s, border-color 0.15s, background-color 0.15s;
+    }
+
+    .chip:hover,
+    .chip:focus-visible {
+        @apply text-accent;
+        border-color: color-mix(in srgb, var(--color-accent) 40%, transparent);
+        background-color: color-mix(in srgb, var(--color-accent) 8%, transparent);
+    }
+
+    /* Occupies one grid cell; the mail chip takes whatever the copy button
+       leaves so the cell still reads as a single chip. */
+    .email-wrapper {
+        @apply flex items-center;
+        gap: 0.125rem;
+    }
+
+    .email-wrapper .chip {
+        @apply flex-1;
+    }
+
+    #copy-email {
+        @apply inline-flex items-center justify-center bg-transparent border border-border rounded-md cursor-pointer text-muted p-0;
+        width: 31px;
+        height: 31px;
+        transition: color 0.15s, border-color 0.15s, background-color 0.15s;
+    }
+
+    #copy-email:hover,
+    #copy-email:focus-visible {
+        @apply text-ok;
+        border-color: color-mix(in srgb, var(--color-ok) 40%, transparent);
+        background-color: color-mix(in srgb, var(--color-ok) 8%, transparent);
+    }
+
+    #copy-email.copied {
+        @apply text-ok;
+        border-color: color-mix(in srgb, var(--color-ok) 40%, transparent);
+    }
+
+    /* Copied state swaps the icon as well as the colour, so the feedback
+       is not carried by colour alone. */
+    .icon-check { display: none; }
+    .copied .icon-copy { display: none; }
+    .copied .icon-check { display: block; }
+
+    /* Per-platform brand colours, tuned per scheme so brand text stays
+       >= 4.5:1 against the hover tint. */
+    .chip.gh       { --brand: #6e5494; }
+    .chip.linkedin { --brand: #0b61b8; }
+    .chip.orcid    { --brand: #4f6314; }
+
+    @media (prefers-color-scheme: dark) {
+        .chip.gh       { --brand: #a78fc7; }
+        .chip.linkedin { --brand: #58a1e8; }
+        .chip.orcid    { --brand: #a6ce39; }
+    }
+
+    .chip.gh svg,
+    .chip.linkedin svg,
+    .chip.orcid svg {
+        color: var(--brand);
+    }
+
+    .chip.gh:hover, .chip.gh:focus-visible,
+    .chip.linkedin:hover, .chip.linkedin:focus-visible,
+    .chip.orcid:hover, .chip.orcid:focus-visible {
+        color: var(--brand);
+        border-color: color-mix(in srgb, var(--brand) 40%, transparent);
+        background-color: color-mix(in srgb, var(--brand) 8%, transparent);
+    }
+
+    /* Solid, not dashed: dashed borders mean "placeholder" in the parent
+       site's vocabulary and this is a real action. */
+    .vcf {
+        @apply flex items-center justify-center text-muted no-underline rounded-md border border-border;
+        gap: 0.5rem;
+        margin-top: 0.75rem;
+        padding: 0.55rem;
+        font-size: 0.8125rem;
+        transition: color 0.15s, border-color 0.15s, background-color 0.15s;
+    }
+
+    .vcf:hover,
+    .vcf:focus-visible {
+        @apply text-accent;
+        border-color: color-mix(in srgb, var(--color-accent) 40%, transparent);
+        background-color: color-mix(in srgb, var(--color-accent) 8%, transparent);
+    }
+
+    /* --- Main site ---------------------------------------------------
+       The one action for someone who has already scanned. Tinted rather
+       than filled: the QR keeps top billing. */
+    .cta {
+        @apply flex items-center text-accent no-underline rounded-lg border;
+        gap: 0.55rem;
+        padding: 0.8rem 1rem;
+        font-size: 0.8125rem;
+        border-color: color-mix(in srgb, var(--color-accent) 40%, transparent);
+        background-color: color-mix(in srgb, var(--color-accent) 8%, transparent);
+        transition: border-color 0.15s, background-color 0.15s;
+    }
+
+    .cta:hover,
+    .cta:focus-visible {
+        border-color: var(--color-accent);
+        background-color: color-mix(in srgb, var(--color-accent) 14%, transparent);
+    }
+
+    .cta-key {
+        @apply lowercase font-semibold;
+        letter-spacing: 0.08em;
+    }
+
+    .cta-val {
+        @apply text-fg-dim ml-auto;
+    }
+
+    .cta svg { @apply flex-shrink-0; }
+
+    footer {
+        @apply text-muted border-t border-divider;
+        margin-top: 1.6rem;
+        padding-top: 0.9rem;
+        font-size: 0.7rem;
+    }
+
+    /* --- Short viewports ---------------------------------------------
+       Small phones in portrait: shrink the die rather than let the page
+       scroll away from the thing being scanned. */
+    @media (max-height: 700px) {
+        .die { width: 8.75rem; }
+        .ident { margin-bottom: 1.4rem; }
+        .scan { margin-bottom: 1.5rem; }
+    }
+}
