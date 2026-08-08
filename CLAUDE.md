@@ -7,8 +7,8 @@ This file is the single source of truth for project intent and conventions.
 ## Project context
 
 - **Use case.** David shows this page on his phone at a conference. The other person scans the on-screen QR and lands on the same page on their own phone. Everything else follows from that.
-- **Two readers, two moments.** Before the scan: a stranger aiming a camera, who needs the QR and a visible destination URL to decide it is safe to scan. After the scan: the same person holding the page, for whom the QR is spent and the contact links and the link to the main site are the point. The layout serves both in one pass.
-- **Weight is a feature.** Conference wifi is the design constraint. The deployed page is **one request**: CSS, JS, the QR, and both fonts are inlined into `index.html` at build time. Current budget is ~43 kB raw / ~23 kB gzipped. Anything that adds a request or meaningfully grows that number needs a reason.
+- **Two readers, two moments, two faces.** Before the scan: a stranger aiming a camera, who needs the QR and a visible destination URL to decide it is safe to scan. After the scan: the same person holding the page, for whom the QR is spent and the addresses are the point. The card's front serves the first and its back serves the second, and the whole reason it is a card that turns over is that those two moments never overlap.
+- **Weight is a feature.** Conference wifi is the design constraint. The deployed page is **one request**: CSS, JS, the QR, and both fonts are inlined into `index.html` at build time. Current budget is ~49 kB raw / ~25 kB gzipped. Anything that adds a request or meaningfully grows that number needs a reason.
 - **Contact.** Email `dk949.david@gmail.com`, GitHub `@dk949`, LinkedIn `https://www.linkedin.com/in/dk949/`, ORCID `0009-0003-7387-6169`. Same set as the main site.
 - **Frameworks.** Intentionally avoided, as on the main site. Build-time dependencies are cheap because they never ship; runtime dependencies must justify their bytes.
 
@@ -45,9 +45,10 @@ data/card.ts                ← URLs, email, vCard fields, font glyph floor
 scripts/generate.ts         ← prebuild: QR + font subsets + vCard
 scripts/subset-font.d.ts    ← local types for the untyped subset-font package
 src/
-  styles.css                ← card-specific layout and components
+  styles.css                ← card layout, foil gradients, components
                               (tokens come from @dk949/site-theme)
-  card.ts                   ← the only runtime script (copy-to-clipboard)
+  card.ts                   ← the only runtime script (copy-to-clipboard;
+                              the flip is pure CSS)
   generated/                ← build-time output (gitignored)
     qr.svg                  ← inlined via <!-- @include qr -->
     fonts.css               ← @font-face with base64 subsets
@@ -70,25 +71,27 @@ The `html-partials` plugin is the same `<!-- @include name -->` convention as th
 
 ## Conventions
 
-- **Structure in HTML, behavior in TS.** Don't render markup from TS. `src/card.ts` only wires up the copy button.
+- **Structure in HTML, behavior in TS.** Don't render markup from TS. `src/card.ts` only wires up the copy button; the flip is a checkbox and a stylesheet.
 - **Glyph coverage.** The mono subset is derived from the visible text in `index.html` unioned with `FONT_BASE_CHARS` in `data/card.ts`. New copy is covered automatically on the next build; a genuinely new symbol (arrows, box drawing) needs adding to the floor, or it silently falls back.
 - **Tailwind scans an explicit source list.** `styles.css` opens with `@import "tailwindcss" source(none)` followed by `@source` for `index.html` and `card.ts`. Automatic detection walks the whole repo, which meant prose in `CLAUDE.md` and `TODO.md` was emitting utilities for words like "grid" and "border" (about 1.8 kB of dead CSS). **Adding a file that carries utility classes in markup means adding an `@source` line for it**, or those classes are silently never generated. `@apply` is unaffected.
 - **Two sources of truth for contact info, on purpose.** `index.html` holds what is displayed; `data/card.ts` holds what the build generates (QR payload, vCard, the email the copy button writes). Update both.
 - **Indentation: 2 spaces (HTML) 4 spaces (everything else)** (`.editorconfig`). LF line endings, final newline.
 - **No em-dashes** in code, markup, or docs other than this file. Use hyphens.
 - **Strict TS.** `noUncheckedIndexedAccess` is on.
-- **Theming.** **Silicon + Copper**, identical to the main site. Light default, dark via `prefers-color-scheme`, no JS toggle. Tokens come from the `@dk949/site-theme` package (see "Shared theme"); never add a card-specific value to it.
-- **The QR is never themed.** It keeps fixed dark-on-light values in both schemes. Plenty of phone cameras refuse inverted codes, and a card that will not scan is not a card.
-- **Motion.** Hover and focus transitions only, no entrance animation. The page is handed to someone with a camera already pointed at it, and content that is invisible until a frame has run is a real failure mode.
-- **Accessibility.** Visible focus ring on everything interactive, `role="status"` live region for the copy confirmation, `aria-label` on the QR, and copied state signalled by an icon swap rather than colour alone.
+- **Theming.** **Silicon + Copper**, identical to the main site. Light default, dark via `prefers-color-scheme`, no JS toggle. Tokens come from the `@dk949/site-theme` package (see "Shared theme"); never add a card-specific value to it. The foil gradients and the card stock are card-specific, so they live in `styles.css` as `:root` custom properties, not in the theme package.
+- **The QR is tinted, never inverted.** It keeps fixed dark-on-light values in both schemes: dark copper `#3a1e08` on `#f4f5f7`, about 13:1. Plenty of phone cameras refuse inverted or low-contrast codes, and a card that will not scan is not a card. It is the one element the dark scheme does not touch.
+- **Motion.** The flip, plus hover and focus transitions. No entrance animation: the page is handed to someone with a camera already pointed at it, and content that is invisible until a frame has run is a real failure mode. `prefers-reduced-motion` zeroes both `transition-duration` and `transition-delay`, because the face swap is timed to the middle of the rotation and would otherwise leave a blank card.
+- **Accessibility.** Visible focus ring on everything interactive, `role="status"` live region for the copy confirmation, `aria-label` on the QR, and copied state signalled by an icon swap rather than colour alone. The hidden face is `visibility: hidden`, which takes it out of the tab order; `backface-visibility` alone does not.
 
 ## Design
 
 Sibling to the main site, not a clone of it. Same tokens and type roles, different composition.
 
-- **Signature.** The QR is the silicon die: a bright plate framed by four copper alignment fiducials, with a trace dropping out of its bottom edge into a via that terminates at the `%scan` label. It is the only bold element on the page, and it is bold because scanning is the page's only job.
-- **Inherited motifs.** The copper trace segment under the identity block, the mono lowercase `%label` section headings (MLIR SSA-value nod, CSS `::before`), the chip styling and per-platform brand colours on contact links.
-- **Hierarchy below the fold of attention.** Contacts as a fixed 2x2 grid, then the vCard download, then the main-site link as the one tinted call to action. Dashed borders mean "placeholder" in the main site's vocabulary and are not used here.
+- **Signature.** The page is a business card as an object: one piece of stock at a real 85x55 ratio, with a milled copper foil rim and a hairline foil rule inset from it, that you **turn over** rather than scroll. The foil is a ten-stop gradient rather than a flat accent, so its highlights sit at fixed points on the element and travel across the rim as the card rotates. That sweep is what the flip buys, and it is the only animation on the page.
+- **Front and back.** Front: the name foil-stamped in Archivo, the role and affiliation, the QR, the `%scan` destination, and the main-site link. Back: a mono echo of the name, the addresses themselves as a keyed list (`mail dk949.david@gmail.com`, not just `mail`), the vCard download, and the copyright. The back has to be readable to someone holding it without tapping anything.
+- **The hinge.** A visually hidden `role="switch"` checkbox, sibling to `.card`, toggled by a `<label class="turn-tab">` on each face. No JavaScript is involved, so the back survives a failed script. It sits outside both faces on purpose: a control inside the hidden face stops being focusable exactly when it is needed. Both labels point at it, so it carries an explicit `aria-label` (that beats the `<label>` elements in the accessible-name computation).
+- **Inherited motifs.** The mono lowercase `%label` section headings (MLIR SSA-value nod, CSS `::before`) and the per-platform brand colours on contact rows. The silicon-die framing that the first pass used (copper fiducials, trace, via) is gone: the card's own foil does that work now, and three nested frames was one too many.
+- **Fitting the viewport.** A locked aspect ratio can outgrow the screen, so `main`'s `max-width` is capped by the available height (`calc((100svh - 3rem) * 55 / 85)`, and the inverse in landscape). The card shrinks; the page never scrolls away from the QR. Landscape composition kicks in at `min-width: 40rem`, which also catches a phone turned sideways.
 
 ## Shared theme
 

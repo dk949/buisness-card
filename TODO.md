@@ -14,6 +14,10 @@
       counts out of Vercel's Observability tab. Workflow and `public/CNAME`
       removed; CI now runs typecheck only
 * [x] CLAUDE.md
+* [x] Redesign as an actual business card: 85x55 stock, copper foil rim and
+      inner rule, foil-stamped name, copper-tinted QR, and a CSS-only flip to
+      a reverse face carrying the addresses themselves. Replaces the first
+      pass's silicon-die framing (fiducials, trace, via)
 
 ## Before going live
 
@@ -33,6 +37,10 @@
       conference networking commercial" question never arises. The docs page
       phrasing is stricter than the contract; the contract governs
 * [x] Scan the QR from a real phone camera at arm's length, both schemes
+* [ ] Rescan since the redesign: the modules are dark copper now, not near
+      black. Still ~13:1 and still dark-on-light, but worth one real camera
+* [ ] Check the flip on a real iOS Safari (`transform-style: preserve-3d` on
+      a grid container is the part worth confirming)
 * [ ] Add a one-line privacy note (host is Vercel, aggregate page-view counts,
       no cookies, no tracking) with an email contact
 * [ ] Check the vCard imports cleanly on iOS and on Android

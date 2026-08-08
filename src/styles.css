@@ -9,33 +9,77 @@
 @import "./generated/fonts.css";
 
 /* ===================================================================
-   Card layout
+   The card
 
-   One screen, one object. The page has two readers at two moments:
-   the stranger pointing a camera at the QR, and the same person a
-   second later holding the page on their own phone. The QR is sized
-   for the first; everything below it is ordered for the second.
+   Not a page about a card: the card itself, one piece of stock with
+   two faces, sized to a real 85x55 business card and turned over
+   rather than scrolled. Front is the one a stranger points a camera
+   at (name, what I do, the QR, the URL it goes to). Back is the one
+   they read a second later, holding it (contacts, vCard).
 
-   The visual conceit extends the parent site's Silicon + Copper
-   motif: the QR is the die, framed by copper alignment fiducials,
-   with a trace and a via carrying you down into the contact rail.
-   That is the only bold move on the page; the rest stays quiet.
+   Material comes from the parent site's Silicon + Copper palette read
+   literally: wafer-grey stock, copper foil. The foil is a multi-stop
+   gradient rather than a flat accent, so its highlights sit at fixed
+   points on the element and appear to travel across the rim as the
+   card rotates. That sweep is the whole reason the flip is worth its
+   bytes, and it is the only animation on the page.
    =================================================================== */
 
 @layer base {
-    body {
-        @apply font-mono bg-bg text-fg antialiased flex;
-        margin: 0;
-        min-height: 100svh;
-        padding: 2rem 1.25rem;
+    :root {
+        /* Polished copper for edges and rules. Ten stops, not two: two
+           reads as an ombre, the alternating dark/light bands are what
+           make it read as metal catching light. */
+        --foil: linear-gradient(115deg,
+            #6b3208 0%, #a55c1c 9%, #e0a877 18%, #f7ddc4 24%,
+            #b9722c 35%, #7d3d0c 47%, #c0803d 59%, #f2d0ac 67%,
+            #a75f1e 80%, #6b3208 100%);
+
+        /* Same alloy, tuned for type: every stop clears 3:1 on the stock
+           below it, which is the bar for the h1's size and weight. */
+        --foil-ink: linear-gradient(100deg,
+            #5d2b06 0%, #8f4a12 18%, #a85f1c 30%, #7a3a0b 44%,
+            #4e2405 58%, #93490f 74%, #6b3208 100%);
+
+        --stock-a: #f7f8fa;
+        --stock-b: #e2e5ea;
+        --sheen: rgba(255, 255, 255, 0.5);
+        --edge-shadow: rgba(27, 32, 38, 0.22);
     }
 
-    /* margin:auto rather than justify-content:center -- centring a flex
-       item that outgrows its container clips the top, auto margins do not. */
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --foil: linear-gradient(115deg,
+                #8a4712 0%, #c9873f 9%, #f0bb84 18%, #ffe6cc 24%,
+                #d18f4a 35%, #9c5218 47%, #dda062 59%, #ffe0c2 67%,
+                #c07f3c 80%, #8a4712 100%);
+
+            --foil-ink: linear-gradient(100deg,
+                #c9873f 0%, #f0bb84 18%, #ffe0c2 30%, #d9964e 44%,
+                #b06a24 58%, #edb37b 74%, #c9873f 100%);
+
+            --stock-a: #23272f;
+            --stock-b: #14161a;
+            --sheen: rgba(255, 255, 255, 0.05);
+            --edge-shadow: rgba(0, 0, 0, 0.55);
+        }
+    }
+
+    body {
+        @apply font-mono bg-bg text-fg antialiased grid;
+        margin: 0;
+        min-height: 100svh;
+        padding: 1.5rem 1rem;
+        place-items: center;
+    }
+
+    /* Width capped by the height that is actually available, so a card with
+       a locked aspect ratio shrinks to fit rather than scrolling. The thing
+       being scanned must never be below the fold. 3rem is the body padding. */
     main {
         @apply w-full;
-        margin: auto;
-        max-width: 23rem;
+        max-width: min(22rem, calc((100svh - 3rem) * 55 / 85));
+        perspective: 1600px;
     }
 
     :focus-visible {
@@ -44,140 +88,179 @@
     }
 
     /* No entrance animation, deliberately. This page is handed to someone
-       with a camera already pointed at it; anything that delays the QR
-       being scannable, or that renders content invisible until a frame
-       has run, is a cost with no matching benefit. Motion is limited to
-       hover and focus transitions. */
+       with a camera already pointed at it; anything that renders content
+       invisible until a frame has run is a cost with no matching benefit.
+       Motion is the flip, which someone asked for, plus hover and focus.
+       Delays go too: the face swap is timed to the middle of the rotation,
+       and with the rotation gone it would just be a blank card. */
     @media (prefers-reduced-motion: reduce) {
         *, *::before, *::after {
             transition-duration: 0.01ms !important;
+            transition-delay: 0s !important;
         }
     }
 }
 
 @layer components {
-    /* --- Identity --------------------------------------------------- */
+    /* --- The stock ---------------------------------------------------- */
 
-    .ident {
-        @apply relative;
-        padding-bottom: 1.15rem;
-        margin-bottom: 1.9rem;
+    .card {
+        @apply relative grid;
+        aspect-ratio: 55 / 85;
+        transform-style: preserve-3d;
+        transition: transform 0.62s cubic-bezier(0.3, 0.75, 0.25, 1);
     }
 
-    /* The copper trace segment under the rule, lifted verbatim from the
-       parent site's hero, is the cheapest possible family resemblance. */
-    .ident::after {
-        @apply absolute bg-accent;
+    /* Both faces occupy the same grid cell, so the card is as tall as its
+       taller face with no absolute positioning and no measured heights. */
+    .face {
+        @apply grid relative;
+        grid-area: 1 / 1;
+        visibility: hidden;
+        backface-visibility: hidden;
+        border-radius: 0.9rem;
+        padding: clamp(1.15rem, 4.6vw, 1.6rem) clamp(1.1rem, 4.4vw, 1.5rem);
+        background-image:
+            radial-gradient(120% 75% at 10% -5%, var(--sheen), transparent 62%),
+            linear-gradient(160deg, var(--stock-a), var(--stock-b));
+        box-shadow:
+            0 1px 2px var(--edge-shadow),
+            0 14px 34px -12px var(--edge-shadow);
+        /* Swap faces halfway through the rotation, when both are edge-on.
+           visibility rather than opacity: it also takes the hidden face out
+           of the tab order, which backface-visibility alone does not. */
+        transition: visibility 0s linear 0.31s;
+    }
+
+    .front { visibility: visible; }
+    .back { transform: rotateY(180deg); }
+
+    .turn-input {
+        @apply absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+    }
+
+    .turn-input:checked ~ .card { transform: rotateY(180deg); }
+    .turn-input:checked ~ .card .front { visibility: hidden; }
+    .turn-input:checked ~ .card .back { visibility: visible; }
+
+    /* Focus lives on the hinge checkbox; the ring is drawn on whichever tab
+       is currently face up. */
+    .turn-input:focus-visible ~ .card .turn-tab {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 2px;
+    }
+
+    /* Milled foil edge, then a hairline foil rule inset from it: the two
+       frames of a printed card. Both are gradient-stroked rounded rects,
+       which needs the padding-box mask trick -- border-image cannot follow
+       a border-radius. */
+    .face::before,
+    .face::after {
+        @apply absolute pointer-events-none;
         content: "";
-        left: 0;
-        bottom: 0;
-        width: 3rem;
-        height: 3px;
-        border-radius: 2px;
+        background-image: var(--foil);
+        -webkit-mask:
+            linear-gradient(#000 0 0) content-box,
+            linear-gradient(#000 0 0);
+        mask:
+            linear-gradient(#000 0 0) content-box,
+            linear-gradient(#000 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
     }
+
+    .face::before {
+        inset: 0;
+        padding: 2px;
+        border-radius: inherit;
+    }
+
+    .face::after {
+        inset: 0.6rem;
+        padding: 1px;
+        border-radius: 0.45rem;
+        opacity: 0.75;
+    }
+
+    /* --- Front -------------------------------------------------------- */
+
+    .front {
+        grid-template-areas: "ident" "scan" "foot";
+        grid-template-rows: auto 1fr auto;
+    }
+
+    .ident { grid-area: ident; }
 
     /* Archivo is subset to a single pinned instance (wght 800 / wdth 118),
-       so the width is baked into the glyphs and font-stretch is not set. */
+       so the width is baked into the glyphs and font-stretch is not set.
+       Foil-stamped: the gradient is clipped to the glyphs, with a flat
+       copper underneath for anything that cannot clip a background. */
     .ident h1 {
-        @apply font-sans text-fg m-0;
-        font-size: clamp(2.3rem, 12vw, 2.9rem);
+        @apply font-sans m-0;
+        font-size: clamp(1.8rem, 10.2vw, 2.5rem);
         font-weight: 800;
-        letter-spacing: -0.025em;
+        letter-spacing: -0.03em;
         line-height: 1;
-        margin-bottom: 0.7rem;
+        margin-bottom: 0.65rem;
+        color: var(--color-accent);
+        background-image: var(--foil-ink);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
     }
 
     .ident .role {
         @apply text-fg-dim m-0;
-        font-size: 0.8125rem;
+        font-size: 0.75rem;
         letter-spacing: 0.01em;
         line-height: 1.5;
     }
 
     .ident .affil {
         @apply text-muted m-0;
-        font-size: 0.75rem;
+        font-size: 0.6875rem;
         line-height: 1.5;
     }
 
-    /* --- Scan ------------------------------------------------------- */
+    /* --- Scan --------------------------------------------------------- */
 
     .scan {
-        @apply relative;
-        --trace: 1.6rem;
-        margin-bottom: 2rem;
+        @apply flex flex-col items-center justify-center;
+        grid-area: scan;
+        gap: 0.7rem;
+        padding: 0.9rem 0;
     }
 
-    /* Fixed dark-on-light in both schemes. Plenty of phone cameras refuse
-       inverted codes, and a card that will not scan is not a card. The two
-       values are the light scheme's own fg / bg-elev, so it still reads as
-       part of the palette rather than a foreign white box. */
+    /* Fixed dark-on-light in both schemes, tinted to the card's copper
+       rather than themed by it. Plenty of phone cameras refuse an inverted
+       code, and a card that will not scan is not a card. The foil hairline
+       is the aiming mark: it says where the code ends. */
     .die {
-        @apply relative block mx-auto;
-        --qr-fg: #14161a;
-        --qr-bg: #f3f4f6;
-        width: 10.5rem;
-        border-radius: 5px;
-        background: var(--qr-bg);
-        box-shadow: 0 0 30px color-mix(in srgb, var(--color-accent) 20%, transparent);
+        @apply relative block;
+        --qr-fg: #3a1e08;
+        --qr-bg: #f4f5f7;
+        width: clamp(7rem, 40vw, 9.5rem);
+        padding: 0.4rem;
+        border-radius: 0.4rem;
+        background-color: var(--qr-bg);
+        background-image: var(--foil);
+        box-shadow: 0 2px 10px -2px var(--edge-shadow);
     }
 
     .die svg {
         @apply block w-full h-auto;
-        border-radius: 5px;
-    }
-
-    /* Four copper corner brackets, drawn as eight solid gradients so the
-       frame costs no extra elements. Photolithography alignment marks:
-       they say "aim here" and they are true to the subject. */
-    .die::before {
-        @apply absolute pointer-events-none;
-        content: "";
-        inset: -0.7rem;
-        --arm: 0.8rem;
-        --gauge: 2px;
-        background-image:
-            linear-gradient(var(--color-accent) 0 0), linear-gradient(var(--color-accent) 0 0),
-            linear-gradient(var(--color-accent) 0 0), linear-gradient(var(--color-accent) 0 0),
-            linear-gradient(var(--color-accent) 0 0), linear-gradient(var(--color-accent) 0 0),
-            linear-gradient(var(--color-accent) 0 0), linear-gradient(var(--color-accent) 0 0);
-        background-repeat: no-repeat;
-        background-position:
-            0 0, 0 0,
-            100% 0, 100% 0,
-            0 100%, 0 100%,
-            100% 100%, 100% 100%;
-        background-size:
-            var(--arm) var(--gauge), var(--gauge) var(--arm),
-            var(--arm) var(--gauge), var(--gauge) var(--arm),
-            var(--arm) var(--gauge), var(--gauge) var(--arm),
-            var(--arm) var(--gauge), var(--gauge) var(--arm);
-    }
-
-    /* Trace dropping out of the die's bottom edge, terminating in a via
-       (a plated through-hole: ring, not dot). */
-    .die::after {
-        @apply absolute pointer-events-none;
-        content: "";
-        top: 100%;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 14px;
-        height: var(--trace);
-        background-image:
-            linear-gradient(var(--color-accent) 0 0),
-            radial-gradient(circle at 50% calc(100% - 5.5px),
-                transparent 0 1.8px, var(--color-accent) 1.9px 5px, transparent 5.1px);
-        background-repeat: no-repeat;
-        background-position: 50% 0, 0 0;
-        background-size: 2px calc(var(--trace) - 11px), 100% 100%;
+        border-radius: 0.15rem;
     }
 
     .scan-label {
         @apply flex flex-wrap items-baseline justify-center m-0;
-        gap: 0.5rem;
-        margin-top: calc(var(--trace) + 0.55rem);
-        font-size: 0.75rem;
+        gap: 0.45rem;
+        font-size: 0.6875rem;
     }
 
     .scan-label .key {
@@ -187,7 +270,7 @@
 
     /* SSA-value prefix, the parent site's section-label tic. */
     .scan-label .key::before,
-    .reach h2::before {
+    .rail::before {
         content: "%";
     }
 
@@ -196,59 +279,136 @@
         letter-spacing: 0.01em;
     }
 
-    /* --- Contact ---------------------------------------------------- */
+    /* --- Foot rail (both faces) --------------------------------------- */
+
+    .foot {
+        @apply flex items-center justify-between;
+        gap: 0.75rem;
+        font-size: 0.6875rem;
+    }
+
+    .front .foot { grid-area: foot; }
+    .back .foot { align-self: end; }
+
+    /* The other thing worth doing once the QR is spent, so it is set at the
+       weight of an action rather than a footnote. Foil-ruled rather than
+       underlined: the rule is a 2px slice of the same gradient as the rim,
+       so the link reads as part of the print. */
+    .site {
+        @apply inline-flex items-center text-accent font-semibold no-underline;
+        gap: 0.4rem;
+        font-size: 0.8125rem;
+        letter-spacing: 0.01em;
+        padding-bottom: 4px;
+        background-image: var(--foil);
+        background-size: 100% 2px;
+        background-position: 0 100%;
+        background-repeat: no-repeat;
+        transition: background-size 0.15s;
+    }
+
+    .site svg { @apply flex-shrink-0; }
+
+    .site:hover,
+    .site:focus-visible {
+        background-size: 100% 3px;
+    }
+
+    .mark {
+        @apply text-muted m-0;
+        font-size: 0.625rem;
+    }
+
+    /* The affordance for a face nobody can see. It names what is on the
+       other side rather than the gesture, so "contacts" going out and
+       "front" coming back. */
+    .turn-tab {
+        @apply inline-flex items-center text-accent rounded-full cursor-pointer;
+        gap: 0.35rem;
+        padding: 0.3rem 0.7rem;
+        letter-spacing: 0.04em;
+        border: 1px solid color-mix(in srgb, var(--color-accent) 40%, transparent);
+        background-color: color-mix(in srgb, var(--color-accent) 8%, transparent);
+        transition: border-color 0.15s, background-color 0.15s;
+    }
+
+    .turn-tab:hover {
+        border-color: var(--color-accent);
+        background-color: color-mix(in srgb, var(--color-accent) 14%, transparent);
+    }
+
+    /* --- Back --------------------------------------------------------- */
+
+    /* Wordmark, addresses, action, foot: weight spread across the face
+       rather than pooled at the top. */
+    .back {
+        grid-template-rows: auto 1fr auto auto;
+    }
+
+    .wordmark {
+        @apply font-semibold m-0;
+        font-size: 0.8125rem;
+        letter-spacing: 0.12em;
+        color: var(--color-accent);
+        background-image: var(--foil-ink);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
 
     .reach {
-        margin-bottom: 1.6rem;
+        @apply self-center w-full;
+        padding: 0.5rem 0;
     }
 
-    .reach h2 {
+    .rail {
         @apply text-accent font-semibold lowercase m-0;
-        font-size: 0.75rem;
+        font-size: 0.6875rem;
         letter-spacing: 0.08em;
-        margin-bottom: 0.85rem;
+        margin-bottom: 0.75rem;
     }
 
-    /* Fixed two columns rather than flex-wrap: four channels always land as
-       a tidy 2x2 block instead of a ragged 3+1 that shifts with the
-       viewport. It also lines the group up with the full-width actions
-       below it. */
-    .chips {
-        @apply grid;
-        grid-template-columns: 1fr 1fr;
+    .lines {
+        @apply grid m-0 p-0 list-none;
+        gap: 0.3rem;
+    }
+
+    .lines li {
+        @apply flex items-center;
+        gap: 0.3rem;
+    }
+
+    /* Icon, key, value: a fixed key column so every address starts on the
+       same vertical, which is what makes a printed list read as a list. */
+    .line {
+        @apply grid items-center flex-1 min-w-0 text-fg-dim no-underline rounded-md border border-transparent;
+        grid-template-columns: 0.875rem 3.7rem 1fr;
         gap: 0.5rem;
-    }
-
-    .chip {
-        @apply inline-flex items-center text-fg-dim no-underline rounded-md border border-border;
-        gap: 0.45rem;
-        font-size: 0.8125rem;
-        padding: 0.45rem 0.8rem;
+        padding: 0.35rem 0.55rem;
+        font-size: 0.6875rem;
         transition: color 0.15s, border-color 0.15s, background-color 0.15s;
     }
 
-    .chip:hover,
-    .chip:focus-visible {
-        @apply text-accent;
+    .line .k {
+        @apply text-accent lowercase;
+        letter-spacing: 0.04em;
+    }
+
+    .line .v {
+        @apply truncate;
+        letter-spacing: 0.01em;
+    }
+
+    .line:hover,
+    .line:focus-visible {
         border-color: color-mix(in srgb, var(--color-accent) 40%, transparent);
         background-color: color-mix(in srgb, var(--color-accent) 8%, transparent);
     }
 
-    /* Occupies one grid cell; the mail chip takes whatever the copy button
-       leaves so the cell still reads as a single chip. */
-    .email-wrapper {
-        @apply flex items-center;
-        gap: 0.125rem;
-    }
-
-    .email-wrapper .chip {
-        @apply flex-1;
-    }
-
     #copy-email {
         @apply inline-flex items-center justify-center bg-transparent border border-border rounded-md cursor-pointer text-muted p-0;
-        width: 31px;
-        height: 31px;
+        width: 29px;
+        height: 29px;
         transition: color 0.15s, border-color 0.15s, background-color 0.15s;
     }
 
@@ -272,28 +432,33 @@
 
     /* Per-platform brand colours, tuned per scheme so brand text stays
        >= 4.5:1 against the hover tint. */
-    .chip.gh       { --brand: #6e5494; }
-    .chip.linkedin { --brand: #0b61b8; }
-    .chip.orcid    { --brand: #4f6314; }
+    .line.gh       { --brand: #6e5494; }
+    .line.linkedin { --brand: #0b61b8; }
+    .line.orcid    { --brand: #4f6314; }
 
     @media (prefers-color-scheme: dark) {
-        .chip.gh       { --brand: #a78fc7; }
-        .chip.linkedin { --brand: #58a1e8; }
-        .chip.orcid    { --brand: #a6ce39; }
+        .line.gh       { --brand: #a78fc7; }
+        .line.linkedin { --brand: #58a1e8; }
+        .line.orcid    { --brand: #a6ce39; }
     }
 
-    .chip.gh svg,
-    .chip.linkedin svg,
-    .chip.orcid svg {
+    .line.gh svg,
+    .line.linkedin svg,
+    .line.orcid svg {
         color: var(--brand);
     }
 
-    .chip.gh:hover, .chip.gh:focus-visible,
-    .chip.linkedin:hover, .chip.linkedin:focus-visible,
-    .chip.orcid:hover, .chip.orcid:focus-visible {
-        color: var(--brand);
+    .line.gh:hover, .line.gh:focus-visible,
+    .line.linkedin:hover, .line.linkedin:focus-visible,
+    .line.orcid:hover, .line.orcid:focus-visible {
         border-color: color-mix(in srgb, var(--brand) 40%, transparent);
         background-color: color-mix(in srgb, var(--brand) 8%, transparent);
+    }
+
+    .line.gh:hover .k, .line.gh:focus-visible .k,
+    .line.linkedin:hover .k, .line.linkedin:focus-visible .k,
+    .line.orcid:hover .k, .line.orcid:focus-visible .k {
+        color: var(--brand);
     }
 
     /* Solid, not dashed: dashed borders mean "placeholder" in the parent
@@ -301,9 +466,9 @@
     .vcf {
         @apply flex items-center justify-center text-muted no-underline rounded-md border border-border;
         gap: 0.5rem;
-        margin-top: 0.75rem;
-        padding: 0.55rem;
-        font-size: 0.8125rem;
+        margin-bottom: 0.9rem;
+        padding: 0.5rem;
+        font-size: 0.6875rem;
         transition: color 0.15s, border-color 0.15s, background-color 0.15s;
     }
 
@@ -314,49 +479,52 @@
         background-color: color-mix(in srgb, var(--color-accent) 8%, transparent);
     }
 
-    /* --- Main site ---------------------------------------------------
-       The one action for someone who has already scanned. Tinted rather
-       than filled: the QR keeps top billing. */
-    .cta {
-        @apply flex items-center text-accent no-underline rounded-lg border;
-        gap: 0.55rem;
-        padding: 0.8rem 1rem;
-        font-size: 0.8125rem;
-        border-color: color-mix(in srgb, var(--color-accent) 40%, transparent);
-        background-color: color-mix(in srgb, var(--color-accent) 8%, transparent);
-        transition: border-color 0.15s, background-color 0.15s;
-    }
+    /* --- Landscape ----------------------------------------------------
+       A real card is 85x55, and anything wider than a phone held upright
+       should be that shape. This also catches a phone turned sideways,
+       where the height cap is what keeps the card on screen. */
+    @media (min-width: 40rem) {
+        main { max-width: min(38rem, calc((100svh - 3rem) * 85 / 55)); }
 
-    .cta:hover,
-    .cta:focus-visible {
-        border-color: var(--color-accent);
-        background-color: color-mix(in srgb, var(--color-accent) 14%, transparent);
-    }
+        .card { aspect-ratio: 85 / 55; }
 
-    .cta-key {
-        @apply lowercase font-semibold;
-        letter-spacing: 0.08em;
-    }
+        .face {
+            border-radius: 1.1rem;
+            padding: clamp(1.15rem, 4.2vh, 2rem) clamp(1.3rem, 3.6vw, 2.2rem);
+        }
 
-    .cta-val {
-        @apply text-fg-dim ml-auto;
-    }
+        .face::after {
+            inset: 0.8rem;
+            border-radius: 0.6rem;
+        }
 
-    .cta svg { @apply flex-shrink-0; }
+        /* The foot rail runs the full width so the turn tab lands in the
+           card's own bottom corner rather than halfway across it. */
+        .front {
+            grid-template-areas: "ident scan" "foot foot";
+            grid-template-columns: 1fr auto;
+            grid-template-rows: 1fr auto;
+            column-gap: 2rem;
+        }
 
-    footer {
-        @apply text-muted border-t border-divider;
-        margin-top: 1.6rem;
-        padding-top: 0.9rem;
-        font-size: 0.7rem;
-    }
+        .ident {
+            @apply self-center;
+        }
 
-    /* --- Short viewports ---------------------------------------------
-       Small phones in portrait: shrink the die rather than let the page
-       scroll away from the thing being scanned. */
-    @media (max-height: 700px) {
-        .die { width: 8.75rem; }
-        .ident { margin-bottom: 1.4rem; }
-        .scan { margin-bottom: 1.5rem; }
+        .ident h1 { font-size: clamp(2rem, 7vh, 3.1rem); }
+        .ident .role { font-size: 0.8125rem; }
+        .ident .affil { font-size: 0.75rem; }
+
+        .scan { padding: 0; }
+        .die { width: clamp(7.5rem, 25vh, 11rem); }
+
+        .line {
+            grid-template-columns: 0.875rem 4.5rem 1fr;
+            font-size: 0.75rem;
+            padding: 0.45rem 0.7rem;
+        }
+
+        .rail { font-size: 0.75rem; }
+        .vcf { font-size: 0.75rem; padding: 0.55rem; }
     }
 }
