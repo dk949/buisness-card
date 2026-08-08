@@ -25,16 +25,23 @@
       (Namecheap, Advanced DNS)
 * [x] Verify the live page: 43282 B served, 22.9 kB over the wire, one
       request, `/CNAME` gone
-* [ ] Confirm the Observability tab actually reports edge requests for the
+* [x] Confirm the Observability tab actually reports edge requests for the
       project on the Hobby plan
-* [ ] Check Vercel's terms on whether a personal business card counts as
-      non-commercial use, since Hobby is non-commercial only
+* [x] Check Vercel's terms on whether a personal business card counts as
+      non-commercial use. It qualifies: ToS section 4 reads "personal *or*
+      non-commercial use", so the personal limb is enough and the "is
+      conference networking commercial" question never arises. The docs page
+      phrasing is stricter than the contract; the contract governs
+* [x] Scan the QR from a real phone camera at arm's length, both schemes
 * [ ] Add a one-line privacy note (host is Vercel, aggregate page-view counts,
       no cookies, no tracking) with an email contact
-* [ ] Scan the QR from a real phone camera at arm's length, both schemes
 * [ ] Check the vCard imports cleanly on iOS and on Android
 
 ## Later
+
+* [ ] Record the Observability hit count somewhere periodically. Hobby keeps
+      1 month of analytics data and 1 hour of runtime logs, so a running total
+      across conference seasons has to be captured by hand
 
 * [-] Backport the Silicon + Copper favicon to david-katz.dev, which still ships
       the old Tokyo Night one. Not this repo's job; now tracked in
