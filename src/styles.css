@@ -41,6 +41,10 @@
             #5d2b06 0%, #8f4a12 18%, #a85f1c 30%, #7a3a0b 44%,
             #4e2405 58%, #93490f 74%, #6b3208 100%);
 
+        /* Body padding, and therefore the height the card does not get.
+           Small on a phone held sideways, where every pixel is height. */
+        --pad-y: clamp(0.5rem, 2.5vh, 1.5rem);
+
         --stock-a: #f7f8fa;
         --stock-b: #e2e5ea;
         --sheen: rgba(255, 255, 255, 0.5);
@@ -69,16 +73,19 @@
         @apply font-mono bg-bg text-fg antialiased grid;
         margin: 0;
         min-height: 100svh;
-        padding: 1.5rem 1rem;
+        padding: var(--pad-y) 1rem;
         place-items: center;
     }
 
-    /* Width capped by the height that is actually available, so a card with
-       a locked aspect ratio shrinks to fit rather than scrolling. The thing
-       being scanned must never be below the fold. 3rem is the body padding. */
+    /* The card is width-driven: `main` is exactly as wide as the card, so
+       1cqw is 1% of the card and everything inside can be sized from it.
+       That width is capped by the height actually available (svh, so the
+       phone's address bar is already subtracted), which is what keeps the
+       thing being scanned above the fold. */
     main {
-        @apply w-full;
-        max-width: min(22rem, calc((100svh - 3rem) * 55 / 85));
+        @apply relative;
+        container-type: inline-size;
+        width: min(22rem, 100%, calc((100svh - var(--pad-y) * 2) * 55 / 85));
         perspective: 1600px;
     }
 
@@ -104,22 +111,33 @@
 @layer components {
     /* --- The stock ---------------------------------------------------- */
 
+    /* Height, not aspect-ratio. `aspect-ratio` is a floor: content that does
+       not fit grows the box past the ratio, which is how a card ends up
+       square and taller than the screen. An explicit height derived from the
+       width makes the ratio the authority and the type fit around it. */
     .card {
         @apply relative grid;
-        aspect-ratio: 55 / 85;
+        height: 154.55cqw;
         transform-style: preserve-3d;
         transition: transform 0.62s cubic-bezier(0.3, 0.75, 0.25, 1);
     }
 
-    /* Both faces occupy the same grid cell, so the card is as tall as its
-       taller face with no absolute positioning and no measured heights. */
+    /* Both faces occupy the same grid cell, so neither needs absolute
+       positioning or a measured height.
+
+       One fluid size per face, and everything on it sized in em from there:
+       the card is a scale model of itself at any width, which is what a
+       printed card does when you hold it further away. The floor is there so
+       a very short landscape phone gets small type rather than illegible
+       type. */
     .face {
         @apply grid relative;
         grid-area: 1 / 1;
         visibility: hidden;
         backface-visibility: hidden;
-        border-radius: 0.9rem;
-        padding: clamp(1.15rem, 4.6vw, 1.6rem) clamp(1.1rem, 4.4vw, 1.5rem);
+        font-size: max(0.5rem, 3.125cqw);
+        border-radius: 1.31em;
+        padding: 2.33em 2.18em;
         background-image:
             radial-gradient(120% 75% at 10% -5%, var(--sheen), transparent 62%),
             linear-gradient(160deg, var(--stock-a), var(--stock-b));
@@ -181,10 +199,29 @@
     }
 
     .face::after {
-        inset: 0.6rem;
+        inset: 0.87em;
         padding: 1px;
-        border-radius: 0.45rem;
+        border-radius: 0.65em;
         opacity: 0.75;
+    }
+
+    /* Icons are inline px in the markup; pull them back onto the em scale so
+       they shrink with the card instead of swamping it. */
+    .line svg,
+    .vcf svg {
+        width: 1.27em;
+        height: 1.27em;
+    }
+
+    .turn-tab svg,
+    #copy-email svg {
+        width: 1.18em;
+        height: 1.18em;
+    }
+
+    .site svg {
+        width: 1em;
+        height: 1em;
     }
 
     /* --- Front -------------------------------------------------------- */
@@ -202,11 +239,11 @@
        copper underneath for anything that cannot clip a background. */
     .ident h1 {
         @apply font-sans m-0;
-        font-size: clamp(1.8rem, 10.2vw, 2.5rem);
+        font-size: 3.64em;
         font-weight: 800;
         letter-spacing: -0.03em;
         line-height: 1;
-        margin-bottom: 0.65rem;
+        margin-bottom: 0.26em;
         color: var(--color-accent);
         background-image: var(--foil-ink);
         -webkit-background-clip: text;
@@ -216,14 +253,14 @@
 
     .ident .role {
         @apply text-fg-dim m-0;
-        font-size: 0.75rem;
+        font-size: 1.09em;
         letter-spacing: 0.01em;
         line-height: 1.5;
     }
 
     .ident .affil {
         @apply text-muted m-0;
-        font-size: 0.6875rem;
+        font-size: 1em;
         line-height: 1.5;
     }
 
@@ -232,8 +269,8 @@
     .scan {
         @apply flex flex-col items-center justify-center;
         grid-area: scan;
-        gap: 0.7rem;
-        padding: 0.9rem 0;
+        gap: 1.02em;
+        padding: 1.31em 0;
     }
 
     /* Fixed dark-on-light in both schemes, tinted to the card's copper
@@ -244,9 +281,9 @@
         @apply relative block;
         --qr-fg: #3a1e08;
         --qr-bg: #f4f5f7;
-        width: clamp(7rem, 40vw, 9.5rem);
-        padding: 0.4rem;
-        border-radius: 0.4rem;
+        width: 13.82em;
+        padding: 0.58em;
+        border-radius: 0.58em;
         background-color: var(--qr-bg);
         background-image: var(--foil);
         box-shadow: 0 2px 10px -2px var(--edge-shadow);
@@ -254,13 +291,13 @@
 
     .die svg {
         @apply block w-full h-auto;
-        border-radius: 0.15rem;
+        border-radius: 0.14em;
     }
 
     .scan-label {
         @apply flex flex-wrap items-baseline justify-center m-0;
-        gap: 0.45rem;
-        font-size: 0.6875rem;
+        gap: 0.65em;
+        font-size: 1em;
     }
 
     .scan-label .key {
@@ -283,8 +320,8 @@
 
     .foot {
         @apply flex items-center justify-between;
-        gap: 0.75rem;
-        font-size: 0.6875rem;
+        gap: 1.09em;
+        font-size: 1em;
     }
 
     .front .foot { grid-area: foot; }
@@ -296,10 +333,10 @@
        so the link reads as part of the print. */
     .site {
         @apply inline-flex items-center text-accent font-semibold no-underline;
-        gap: 0.4rem;
-        font-size: 0.8125rem;
+        gap: 0.49em;
+        font-size: 1.18em;
         letter-spacing: 0.01em;
-        padding-bottom: 4px;
+        padding-bottom: 0.31em;
         background-image: var(--foil);
         background-size: 100% 2px;
         background-position: 0 100%;
@@ -316,7 +353,7 @@
 
     .mark {
         @apply text-muted m-0;
-        font-size: 0.625rem;
+        font-size: 0.91em;
     }
 
     /* The affordance for a face nobody can see. It names what is on the
@@ -324,8 +361,8 @@
        "front" coming back. */
     .turn-tab {
         @apply inline-flex items-center text-accent rounded-full cursor-pointer;
-        gap: 0.35rem;
-        padding: 0.3rem 0.7rem;
+        gap: 0.51em;
+        padding: 0.44em 1.02em;
         letter-spacing: 0.04em;
         border: 1px solid color-mix(in srgb, var(--color-accent) 40%, transparent);
         background-color: color-mix(in srgb, var(--color-accent) 8%, transparent);
@@ -347,7 +384,7 @@
 
     .wordmark {
         @apply font-semibold m-0;
-        font-size: 0.8125rem;
+        font-size: 1.18em;
         letter-spacing: 0.12em;
         color: var(--color-accent);
         background-image: var(--foil-ink);
@@ -358,34 +395,34 @@
 
     .reach {
         @apply self-center w-full;
-        padding: 0.5rem 0;
+        padding: 0.73em 0;
     }
 
     .rail {
         @apply text-accent font-semibold lowercase m-0;
-        font-size: 0.6875rem;
+        font-size: 1em;
         letter-spacing: 0.08em;
-        margin-bottom: 0.75rem;
+        margin-bottom: 1.09em;
     }
 
     .lines {
         @apply grid m-0 p-0 list-none;
-        gap: 0.3rem;
+        gap: 0.44em;
     }
 
     .lines li {
         @apply flex items-center;
-        gap: 0.3rem;
+        gap: 0.44em;
     }
 
     /* Icon, key, value: a fixed key column so every address starts on the
        same vertical, which is what makes a printed list read as a list. */
     .line {
         @apply grid items-center flex-1 min-w-0 text-fg-dim no-underline rounded-md border border-transparent;
-        grid-template-columns: 0.875rem 3.7rem 1fr;
-        gap: 0.5rem;
-        padding: 0.35rem 0.55rem;
-        font-size: 0.6875rem;
+        grid-template-columns: 1.27em 5.38em 1fr;
+        gap: 0.73em;
+        padding: 0.51em 0.8em;
+        font-size: 1em;
         transition: color 0.15s, border-color 0.15s, background-color 0.15s;
     }
 
@@ -407,8 +444,8 @@
 
     #copy-email {
         @apply inline-flex items-center justify-center bg-transparent border border-border rounded-md cursor-pointer text-muted p-0;
-        width: 29px;
-        height: 29px;
+        width: 2.64em;
+        height: 2.64em;
         transition: color 0.15s, border-color 0.15s, background-color 0.15s;
     }
 
@@ -465,10 +502,10 @@
        site's vocabulary and this is a real action. */
     .vcf {
         @apply flex items-center justify-center text-muted no-underline rounded-md border border-border;
-        gap: 0.5rem;
-        margin-bottom: 0.9rem;
-        padding: 0.5rem;
-        font-size: 0.6875rem;
+        gap: 0.73em;
+        margin-bottom: 1.31em;
+        padding: 0.73em;
+        font-size: 1em;
         transition: color 0.15s, border-color 0.15s, background-color 0.15s;
     }
 
@@ -484,18 +521,22 @@
        should be that shape. This also catches a phone turned sideways,
        where the height cap is what keeps the card on screen. */
     @media (min-width: 40rem) {
-        main { max-width: min(38rem, calc((100svh - 3rem) * 85 / 55)); }
+        main { width: min(38rem, 100%, calc((100svh - var(--pad-y) * 2) * 85 / 55)); }
 
-        .card { aspect-ratio: 85 / 55; }
+        .card { height: 64.71cqw; }
 
+        /* Everything else on the face rides this one number. The landscape
+           card is wider than the portrait one, so the same 1cqw buys less:
+           1.974 rather than 3.125. */
         .face {
-            border-radius: 1.1rem;
-            padding: clamp(1.15rem, 4.2vh, 2rem) clamp(1.3rem, 3.6vw, 2.2rem);
+            font-size: max(0.5rem, 1.974cqw);
+            border-radius: 1.47em;
+            padding: 2.67em 2.93em;
         }
 
         .face::after {
-            inset: 0.8rem;
-            border-radius: 0.6rem;
+            inset: 1.07em;
+            border-radius: 0.8em;
         }
 
         /* The foot rail runs the full width so the turn tab lands in the
@@ -504,27 +545,21 @@
             grid-template-areas: "ident scan" "foot foot";
             grid-template-columns: 1fr auto;
             grid-template-rows: 1fr auto;
-            column-gap: 2rem;
+            column-gap: 2.67em;
         }
 
         .ident {
             @apply self-center;
         }
 
-        .ident h1 { font-size: clamp(2rem, 7vh, 3.1rem); }
-        .ident .role { font-size: 0.8125rem; }
-        .ident .affil { font-size: 0.75rem; }
+        /* The three that are not simply the portrait proportions scaled:
+           the name is set larger against the wider measure, the die larger
+           against the taller one, and the key column wider because the
+           values sit beside more room. */
+        .ident h1 { font-size: 4.13em; }
+        .die { width: 14.67em; }
+        .line { grid-template-columns: 1.27em 6em 1fr; }
 
         .scan { padding: 0; }
-        .die { width: clamp(7.5rem, 25vh, 11rem); }
-
-        .line {
-            grid-template-columns: 0.875rem 4.5rem 1fr;
-            font-size: 0.75rem;
-            padding: 0.45rem 0.7rem;
-        }
-
-        .rail { font-size: 0.75rem; }
-        .vcf { font-size: 0.75rem; padding: 0.55rem; }
     }
 }
