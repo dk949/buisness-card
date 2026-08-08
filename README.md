@@ -16,4 +16,5 @@ npm run build      # -> dist/index.html
 ```
 
 Contact details and the QR payload live in `data/card.ts`. Changing the URL
-means updating `public/CNAME` to match and rebuilding.
+means updating the domain in Vercel to match and rebuilding, so the QR is
+re-encoded.

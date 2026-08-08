@@ -10,14 +10,24 @@
 * [x] Build-time font subsetting, inlined as base64 (130 kB -> 14 kB)
 * [x] Single-request output via the `single-file` Vite plugin
 * [x] vCard download
-* [x] GitHub Pages deploy workflow
+* [-] GitHub Pages deploy workflow. Replaced by Vercel, so that we get hit
+      counts out of Vercel's Observability tab. Workflow and `public/CNAME`
+      removed; CI now runs typecheck only
 * [x] CLAUDE.md
 
 ## Before going live
 
 * [ ] Create the GitHub repo and push to `trunk`
-* [ ] Add DNS: `CNAME` record `hi` -> `dk949.github.io`
-* [ ] Enable Pages for the repo, source "GitHub Actions", set the custom domain
+* [ ] Import the repo into Vercel, preset Vite, and set the production branch
+      to `trunk`
+* [ ] Claim `hi.david-katz.dev` in the Vercel project's Domains tab
+* [ ] Add DNS: `CNAME` record `hi` -> `cname.vercel-dns.com`
+* [ ] Confirm the Observability tab actually reports edge requests for the
+      project on the Hobby plan
+* [ ] Check Vercel's terms on whether a personal business card counts as
+      non-commercial use, since Hobby is non-commercial only
+* [ ] Add a one-line privacy note (host is Vercel, aggregate page-view counts,
+      no cookies, no tracking) with an email contact
 * [ ] Scan the QR from a real phone camera at arm's length, both schemes
 * [ ] Check the vCard imports cleanly on iOS and on Android
 

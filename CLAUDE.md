@@ -1,6 +1,6 @@
 # business-card
 
-Digital business card for David Katz. Single static page hosted on GitHub Pages at **hi.david-katz.dev**, a subdomain of the main site at [david-katz.dev](https://david-katz.dev) (sibling repo: `../david-katz.dev`).
+Digital business card for David Katz. Single static page hosted on Vercel at **hi.david-katz.dev**, a subdomain of the main site at [david-katz.dev](https://david-katz.dev) (sibling repo: `../david-katz.dev`).
 
 This file is the single source of truth for project intent and conventions.
 
@@ -52,7 +52,7 @@ src/
     qr.svg                  ← inlined via <!-- @include qr -->
     fonts.css               ← @font-face with base64 subsets
 public/                     ← copied to the site root
-  CNAME, favicon.svg
+  favicon.svg
   david-katz.vcf            ← generated (gitignored)
 ```
 
@@ -64,7 +64,7 @@ public/                     ← copied to the site root
 2. **Font subsets** → `src/generated/fonts.css`. The stock latin subsets are 130 kB combined for a page with about sixty characters on it, and roughly half of each file is variation data. The generator keeps only the glyphs the markup uses and only as much of each axis as the design needs: JetBrains Mono keeps `wght 400..700`, Archivo is pinned to a single instance (`wght 800`, `wdth 118`) because only the `h1` uses it. Result is ~14 kB for both, inlined as base64 data URIs.
 3. **vCard** → `public/david-katz.vcf`. vCard 3.0 with CRLF endings, for the "save contact" download.
 
-The `single-file` plugin in `vite.config.ts` then replaces the emitted `<link rel="stylesheet">` and `<script src>` with inline `<style>` and `<script>` and drops those chunks from the bundle. `dist/` should contain exactly four files: `index.html`, `CNAME`, `favicon.svg`, `david-katz.vcf`.
+The `single-file` plugin in `vite.config.ts` then replaces the emitted `<link rel="stylesheet">` and `<script src>` with inline `<style>` and `<script>` and drops those chunks from the bundle. `dist/` should contain exactly three files: `index.html`, `favicon.svg`, `david-katz.vcf`.
 
 The `html-partials` plugin is the same `<!-- @include name -->` convention as the main site, widened to also resolve `src/generated/*.svg`.
 
@@ -114,8 +114,12 @@ Do not fetch the theme over HTTP at build time. It would make both builds depend
 
 ## Hosting
 
-GitHub Pages, served from the built `dist/` output, deployed by `.github/workflows/deploy.yml` on push to `trunk`. `public/CNAME` pins `hi.david-katz.dev`.
+**Vercel**, static build from `dist/`, deployed by Vercel's own GitHub integration on push to `trunk` (the project's production branch must be set to `trunk`; Vercel defaults to the repo default branch and would otherwise file every push as a preview). Build is `npm run build`, output directory `dist`, and `prebuild` fires off the npm lifecycle so QR/font/vCard generation needs no extra config. Node is pinned by `engines.node` in `package.json`; Vercel does not read `.nvmrc`.
 
-DNS: a `CNAME` record for `hi` pointing at `dk949.github.io`. The apex `david-katz.dev` stays on the main site's repo; GitHub Pages allows one custom domain per repo, which is why this is a separate repo rather than another page in the main build.
+GitHub Actions runs `typecheck` only (`.github/workflows/ci.yml`). It does not deploy. GitHub Pages is disabled for the repo.
 
-Changing the subdomain means changing `CARD_URL` in `data/card.ts` and `public/CNAME` together, then rebuilding so the QR is re-encoded.
+**Why not Pages.** Vercel's Observability tab counts edge requests server-side, which is the whole reason for the move: a hit count with no client script, no cookies, and no second request. Vercel Web Analytics would give path and referrer breakdowns but costs an extra request for `/_vercel/insights/script.js`, so it stays off. Weight is the point of this repo.
+
+DNS: a `CNAME` record for `hi` pointing at `cname.vercel-dns.com`, managed wherever `david-katz.dev` is registered. The domain is claimed in the Vercel project's Domains tab; there is no `public/CNAME` file (that was a Pages mechanism). The apex `david-katz.dev` stays on the main site.
+
+Changing the subdomain means changing `CARD_URL` in `data/card.ts` and the domain in the Vercel project together, then rebuilding so the QR is re-encoded.
