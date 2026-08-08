@@ -18,6 +18,8 @@
       inner rule, foil-stamped name, copper-tinted QR, and a CSS-only flip to
       a reverse face carrying the addresses themselves. Replaces the first
       pass's silicon-die framing (fiducials, trace, via)
+* [x] Tap the card to fill the screen, so the conference phone shows the card
+      and not the browser
 
 ## Before going live
 
@@ -40,7 +42,10 @@
 * [ ] Rescan since the redesign: the modules are dark copper now, not near
       black. Still ~13:1 and still dark-on-light, but worth one real camera
 * [ ] Check the flip on a real iOS Safari (`transform-style: preserve-3d` on
-      a grid container is the part worth confirming)
+      a grid container is the part worth confirming). Check the fill-screen
+      affordance is correctly absent there too: iPhone Safari has no
+      Fullscreen API, so `.can-fill` should never be set and the glyph
+      should never appear
 * [ ] Add a one-line privacy note (host is Vercel, aggregate page-view counts,
       no cookies, no tracking) with an email contact
 * [ ] Check the vCard imports cleanly on iOS and on Android

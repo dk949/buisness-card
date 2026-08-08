@@ -84,15 +84,33 @@
        thing being scanned above the fold. */
     main {
         @apply relative;
+        --cap-w: 22rem;
         container-type: inline-size;
-        width: min(22rem, 100%, calc((100svh - var(--pad-y) * 2) * 55 / 85));
+        width: min(var(--cap-w), 100%, calc((100svh - var(--pad-y) * 2) * 55 / 85));
         perspective: 1600px;
     }
+
+    /* Filling the screen lifts the comfortable-width cap: at 22rem the card
+       is already as wide as it wants to be, so on a phone in portrait the
+       gesture would drop the browser chrome and change nothing else. Asking
+       for the screen means asking for the card to take it, and the height
+       cap still holds the ratio. */
+    :fullscreen main { --cap-w: 100vw; }
+    :-webkit-full-screen main { --cap-w: 100vw; }
 
     :focus-visible {
         outline: 2px solid var(--color-accent);
         outline-offset: 2px;
     }
+
+    /* The root element is what goes fullscreen, so it keeps painting the page
+       background and the backdrop behind it never shows. Named anyway: a
+       black flash on the way in would be visible even if the end state is
+       not. Two rules rather than one selector list, since an engine that
+       does not know one of these pseudos would discard both. */
+    ::backdrop { background-color: var(--color-bg); }
+    :fullscreen { background-color: var(--color-bg); }
+    :-webkit-full-screen { background-color: var(--color-bg); }
 
     /* No entrance animation, deliberately. This page is handed to someone
        with a camera already pointed at it; anything that renders content
@@ -214,7 +232,8 @@
     }
 
     .turn-tab svg,
-    #copy-email svg {
+    #copy-email svg,
+    .fill svg {
         width: 1.18em;
         height: 1.18em;
     }
@@ -374,6 +393,39 @@
         background-color: color-mix(in srgb, var(--color-accent) 14%, transparent);
     }
 
+    /* The keyboard's path to the tap, and the only visible sign the gesture
+       exists. Borderless and muted: the tab is the pill on this rail, and a
+       second one would read as an equal choice. Hidden until card.ts adds
+       .can-fill, because the API is missing entirely on iPhone.
+       margin-left:auto puts it and the tab in the right-hand group. */
+    .fill {
+        @apply hidden items-center justify-center bg-transparent border-0 cursor-pointer text-muted p-0;
+        width: 2.2em;
+        height: 2.2em;
+        margin-left: auto;
+        border-radius: 999px;
+        transition: color 0.15s, background-color 0.15s;
+    }
+
+    .can-fill .fill { @apply inline-flex; }
+
+    .fill:hover,
+    .fill:focus-visible {
+        @apply text-accent;
+        background-color: color-mix(in srgb, var(--color-accent) 8%, transparent);
+    }
+
+    /* Icon swap, same tactic as the copy button: the state is carried by the
+       glyph, not by a colour. Two rules, not one selector list -- an engine
+       that does not know :fullscreen would throw out the whole list. */
+    .icon-collapse { display: none; }
+
+    :fullscreen .fill .icon-expand { display: none; }
+    :fullscreen .fill .icon-collapse { display: block; }
+
+    :-webkit-full-screen .fill .icon-expand { display: none; }
+    :-webkit-full-screen .fill .icon-collapse { display: block; }
+
     /* --- Back --------------------------------------------------------- */
 
     /* Wordmark, addresses, action, foot: weight spread across the face
@@ -521,7 +573,10 @@
        should be that shape. This also catches a phone turned sideways,
        where the height cap is what keeps the card on screen. */
     @media (min-width: 40rem) {
-        main { width: min(38rem, 100%, calc((100svh - var(--pad-y) * 2) * 85 / 55)); }
+        main {
+            --cap-w: 38rem;
+            width: min(var(--cap-w), 100%, calc((100svh - var(--pad-y) * 2) * 85 / 55));
+        }
 
         .card { height: 64.71cqw; }
 
