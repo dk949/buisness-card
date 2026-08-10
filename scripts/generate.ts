@@ -18,6 +18,9 @@ import { CARD_URL, EMAIL, FONT_BASE_CHARS, PERSON, SITE_URL } from "../data/card
 
 const ROOT = resolve(import.meta.dirname, "..");
 const GENERATED = resolve(ROOT, "src/generated");
+/* Everything in public/ is generated and gitignored, so a fresh clone has no
+   such directory to write into. */
+const PUBLIC = resolve(ROOT, "public");
 const MARKUP = readFileSync(resolve(ROOT, "index.html"), "utf8");
 
 /* --- QR ---------------------------------------------------------------- */
@@ -172,4 +175,5 @@ const kb = (bytes: number): string => `${(bytes / 1024).toFixed(1)} kB`;
 mkdirSync(GENERATED, { recursive: true });
 writeFileSync(resolve(GENERATED, "qr.svg"), qrSvg(CARD_URL));
 writeFileSync(resolve(GENERATED, "fonts.css"), await fontsCss());
-writeFileSync(resolve(ROOT, "public/david-katz.vcf"), vcard());
+mkdirSync(PUBLIC, { recursive: true });
+writeFileSync(resolve(PUBLIC, "david-katz.vcf"), vcard());

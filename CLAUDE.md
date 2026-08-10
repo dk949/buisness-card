@@ -52,8 +52,8 @@ src/
   generated/                ← build-time output (gitignored)
     qr.svg                  ← inlined via <!-- @include qr -->
     fonts.css               ← @font-face with base64 subsets
-public/                     ← copied to the site root
-  david-katz.vcf            ← generated (gitignored)
+public/                     ← copied to the site root (wholly generated, so
+  david-katz.vcf            ←   absent until the prebuild creates it)
 ```
 
 ## Build pipeline
