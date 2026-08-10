@@ -19,7 +19,7 @@ Matches `../david-katz.dev` except where the single-page/single-request goal div
 - **Vite 6** — single-page build, plus two local plugins in `vite.config.ts`
 - **Plain HTML** — one `index.html` at the repo root, structure lives there
 - **Tailwind CSS 4** — via `@tailwindcss/vite`; card styles in `src/styles.css`
-- **@dk949/site-theme** — the Silicon + Copper tokens, shared with `david-katz.dev` (the only runtime dependency, and it is pure CSS)
+- **@dk949/site-theme** — the Silicon + Copper tokens and the shared favicon, both shared with `david-katz.dev` (the only runtime dependency; CSS, one SVG, and a small Vite plugin)
 - **TypeScript** — strict, `noUncheckedIndexedAccess`, ESNext modules, bundler resolution
 - **JetBrains Mono** — variable font, subset at build time from `@fontsource-variable/jetbrains-mono`
 - **Archivo** — variable font, subset and pinned at build time from `@fontsource-variable/archivo`
@@ -53,7 +53,6 @@ src/
     qr.svg                  ← inlined via <!-- @include qr -->
     fonts.css               ← @font-face with base64 subsets
 public/                     ← copied to the site root
-  favicon.svg
   david-katz.vcf            ← generated (gitignored)
 ```
 
@@ -65,7 +64,7 @@ public/                     ← copied to the site root
 2. **Font subsets** → `src/generated/fonts.css`. The stock latin subsets are 130 kB combined for a page with about sixty characters on it, and roughly half of each file is variation data. The generator keeps only the glyphs the markup uses and only as much of each axis as the design needs: JetBrains Mono keeps `wght 400..700`, Archivo is pinned to a single instance (`wght 800`, `wdth 118`) because only the `h1` uses it. Result is ~14 kB for both, inlined as base64 data URIs.
 3. **vCard** → `public/david-katz.vcf`. vCard 3.0 with CRLF endings, for the "save contact" download.
 
-The `single-file` plugin in `vite.config.ts` then replaces the emitted `<link rel="stylesheet">` and `<script src>` with inline `<style>` and `<script>` and drops those chunks from the bundle. `dist/` should contain exactly three files: `index.html`, `favicon.svg`, `david-katz.vcf`.
+The `single-file` plugin in `vite.config.ts` then replaces the emitted `<link rel="stylesheet">` and `<script src>` with inline `<style>` and `<script>` and drops those chunks from the bundle. `themeFavicon({ inline: true })` folds the shared favicon into its `<link rel="icon">` as a data URI for the same reason, so `dist/` should contain exactly two files: `index.html` and `david-katz.vcf`.
 
 The `html-partials` plugin is the same `<!-- @include name -->` convention as the main site, widened to also resolve `src/generated/*.svg`.
 
@@ -107,9 +106,11 @@ The Silicon + Copper tokens live in **[`@dk949/site-theme`](https://www.npmjs.co
 
 Tailwind 4 resolves `@import` out of `node_modules`, so the `@theme` block behaves exactly as it did inline.
 
-**The package is tokens only** — the `@theme` block and the `prefers-color-scheme` override, nothing else. Layout, components, and anything that describes a particular page belong in that site's own stylesheet. Loading the two font families is also the consumer's job; the theme only names them.
+**The package is tokens plus the favicon** — the `@theme` block, the `prefers-color-scheme` override, `favicon.svg`, and the `themeFavicon()` Vite plugin that installs it. Nothing else: layout, components, and anything that describes a particular page belong in that site's own stylesheet. Loading the two font families is also the consumer's job; the theme only names them.
 
-**Changing a token means releasing the package**, not editing a file here: bump the version in `../site-theme`, `npm publish`, then `npm install` in each consumer. Versioning is semver on the rendered result (patch for a colour nudge that preserves every role and contrast ratio, minor for a new token, major for removing or repurposing one). Consumers use a `^` range, so `npm ci` stays pinned by the lockfile and nothing lands on a live site until its own build runs.
+**The favicon is not in `public/`.** It ships with the theme so the card and the main site cannot drift, and `public/` cannot reach into `node_modules`. `themeFavicon({ inline: true })` in `vite.config.ts` rewrites the `href` of the `<link rel="icon">` in `index.html` to a base64 data URI, in dev and in the build alike, so the card stays a single request and nothing is emitted to `dist/`. The main site takes the same plugin without `inline` and gets a real `dist/favicon.svg`. Editing the mark means releasing the package, same as a token.
+
+**Changing a token means releasing the package**, not editing a file here: bump the version in `../site-theme`, `npm publish`, then `npm install` in each consumer. Versioning is semver on the rendered result (patch for a colour nudge that preserves every role and contrast ratio, minor for a new token or asset, major for removing or repurposing one). Consumers use a `^` range, so `npm ci` stays pinned by the lockfile and nothing lands on a live site until its own build runs.
 
 Do not fetch the theme over HTTP at build time. It would make both builds depend on the deployed state of one of them.
 

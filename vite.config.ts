@@ -1,5 +1,6 @@
 import { defineConfig, type Plugin } from "vite";
 import tailwindcss from "@tailwindcss/vite";
+import { themeFavicon } from "@dk949/site-theme/vite";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 
@@ -72,7 +73,11 @@ function singleFile(): Plugin {
 }
 
 export default defineConfig({
-    plugins: [htmlPartials(), tailwindcss(), singleFile()],
+    /* themeFavicon installs the favicon that ships with the theme package, so
+       the card and david-katz.dev cannot drift apart. Inlined as a data URI
+       here for the same reason the CSS and JS are: one request, no round
+       trips. */
+    plugins: [htmlPartials(), tailwindcss(), themeFavicon({ inline: true }), singleFile()],
     build: {
         cssCodeSplit: false,
         modulePreload: false,
