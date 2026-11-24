@@ -1,5 +1,6 @@
 import { defineConfig, type Plugin } from "vite";
 import tailwindcss from "@tailwindcss/vite";
+import { minify } from "html-minifier-terser";
 import { themeFavicon } from "@dk949/site-theme/vite";
 import { readFileSync } from "fs";
 import { resolve } from "path";
@@ -39,19 +40,25 @@ function htmlPartials(): Plugin {
 /* Folds the CSS and JS bundles into index.html so the deployed card is a
    single request. The fonts are already base64 data URIs inside the
    generated CSS, so nothing else is left to fetch. On conference wifi the
-   round trips cost more than the bytes do. */
+   round trips cost more than the bytes do.
+
+   Vite minifies the CSS and JS but leaves the HTML exactly as written, so
+   the markup is minified here once everything has been inlined. Whitespace
+   collapse is conservative: runs shrink to one space rather than vanishing,
+   because gaps between inline elements are visible on the card. The inlined
+   CSS and JS are already minified, so they are left alone. */
 function singleFile(): Plugin {
     return {
         name: "single-file",
         enforce: "post",
-        generateBundle(_options, bundle) {
+        async generateBundle(_options, bundle) {
             const html = bundle["index.html"];
             if (!html || html.type !== "asset") return;
 
             const consumed: string[] = [];
             const lookup = (href: string) => bundle[href.replace(/^\//, "")];
 
-            let source = String(html.source)
+            const source = String(html.source)
                 .replace(/<link\b[^>]*\brel="stylesheet"[^>]*>/g, tag => {
                     const href = /\bhref="([^"]+)"/.exec(tag)?.[1];
                     const asset = href ? lookup(href) : undefined;
@@ -67,7 +74,11 @@ function singleFile(): Plugin {
                 });
 
             for (const name of consumed) delete bundle[name];
-            html.source = source;
+            html.source = await minify(source, {
+                collapseWhitespace: true,
+                conservativeCollapse: true,
+                removeComments: true,
+            });
         },
     };
 }

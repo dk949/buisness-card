@@ -8,7 +8,7 @@ This file is the single source of truth for project intent and conventions.
 
 - **Use case.** David shows this page on his phone at a conference. The other person scans the on-screen QR and lands on the same page on their own phone. Everything else follows from that.
 - **Two readers, two moments, two faces.** Before the scan: a stranger aiming a camera, who needs the QR and a visible destination URL to decide it is safe to scan. After the scan: the same person holding the page, for whom the QR is spent and the addresses are the point. The card's front serves the first and its back serves the second, and the whole reason it is a card that turns over is that those two moments never overlap.
-- **Weight is a feature.** Conference wifi is the design constraint. The deployed page is **one request**: CSS, JS, the QR, and both fonts are inlined into `index.html` at build time. Current budget is ~53 kB raw / ~25 kB gzipped. Anything that adds a request or meaningfully grows that number needs a reason.
+- **Weight is a feature.** Conference wifi is the design constraint. The deployed page is **one request**: CSS, JS, the QR, and both fonts are inlined into `index.html` at build time. Current budget is ~50 kB raw / ~25 kB gzipped. Anything that adds a request or meaningfully grows that number needs a reason.
 - **Contact.** Email `dk949.david@gmail.com`, GitHub `@dk949`, LinkedIn `https://www.linkedin.com/in/dk949/`, ORCID `0009-0003-7387-6169`. Same set as the main site.
 - **Frameworks.** Intentionally avoided, as on the main site. Build-time dependencies are cheap because they never ship; runtime dependencies must justify their bytes.
 
@@ -23,7 +23,7 @@ Matches `../david-katz.dev` except where the single-page/single-request goal div
 - **TypeScript** — strict, `noUncheckedIndexedAccess`, ESNext modules, bundler resolution
 - **JetBrains Mono** — variable font, subset at build time from `@fontsource-variable/jetbrains-mono`
 - **Archivo** — variable font, subset and pinned at build time from `@fontsource-variable/archivo`
-- **qrcode** + **subset-font** — build-time only, never reach the browser
+- **qrcode** + **subset-font** + **html-minifier-terser** — build-time only, never reach the browser
 
 ## Commands
 
@@ -65,6 +65,8 @@ public/                     ← copied to the site root (wholly generated, so
 3. **vCard** → `public/david-katz.vcf`. vCard 3.0 with CRLF endings, for the "save contact" download.
 
 The `single-file` plugin in `vite.config.ts` then replaces the emitted `<link rel="stylesheet">` and `<script src>` with inline `<style>` and `<script>` and drops those chunks from the bundle. `themeFavicon({ inline: true })` folds the shared favicon into its `<link rel="icon">` as a data URI for the same reason, so `dist/` should contain exactly two files: `index.html` and `david-katz.vcf`.
+
+Last, `single-file` minifies the assembled HTML with `html-minifier-terser`, since Vite minifies CSS and JS but never HTML. Comments are removed and whitespace is collapsed **conservatively**, to a single space rather than to nothing, because gaps between inline elements are visible on the card. The inlined CSS and JS are already minified and are not touched again.
 
 The `html-partials` plugin is the same `<!-- @include name -->` convention as the main site, widened to also resolve `src/generated/*.svg`.
 
